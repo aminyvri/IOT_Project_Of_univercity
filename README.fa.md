@@ -270,4 +270,4 @@ Pull Request و Issue خوش‌آمد است. ابتدا پروژه را Fork ک
 
 ## 👤 سازنده
 
-نام شما — [GitHub](https://github.com/<username>)
+امین یاوری— [GitHub]https://github.com/aminyvri
