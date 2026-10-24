@@ -275,3 +275,4 @@ Released under the **MIT License**.
 ## 👤 Author
 
 Your Name — [GitHub](https://github.com/<username>)
+Amin Yavari — [GitHub]https://github.com/aminyvri
