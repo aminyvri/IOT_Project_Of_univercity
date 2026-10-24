@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>رسید تراکنش</title>
+    <style>
+        body { background-color: #121212; color: #fff; font-family: 'Tahoma', sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; flex-direction: column; justify-content: center; height: 100vh; }
+        
+        .card { background: #1e1e1e; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,230,118,0.2); border-top: 5px solid #00e676; }
+        
+        .icon { font-size: 60px; margin-bottom: 10px; }
+        h2 { color: #00e676; margin: 10px 0; }
+        
+        .row { display: flex; justify-content: space-between; border-bottom: 1px dashed #444; padding: 15px 0; font-size: 16px; }
+        .label { color: #888; }
+        .value { font-weight: bold; }
+        
+        .btn-back {
+            display: block; margin-top: 30px; padding: 15px; background: #333; color: white;
+            text-decoration: none; border-radius: 50px; border: 1px solid #555; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="icon">✅</div>
+        <h2>شارژ موفق</h2>
+        <p style="color:#aaa; font-size:12px; margin-bottom:30px;">تراکنش با موفقیت ثبت شد</p>
+        
+        <div class="row">
+            <span class="label">نام استاد:</span>
+            <span class="value">{{ name }}</span>
+        </div>
+        
+        <div class="row">
+            <span class="label">مبلغ شارژ:</span>
+            <span class="value" style="color:#00e676;">+ {{ amount }} تومان</span>
+        </div>
+        
+        <div class="row">
+            <span class="label">موجودی جدید:</span>
+            <span class="value" style="color:#00bcd4;">{{ balance }} تومان</span>
+        </div>
+
+        <a href="/mobile" class="btn-back">بازگشت به کیف پول ↺</a>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پنل جامع مدیریت</title>
+    <style>
+        body { font-family: 'Tahoma', sans-serif; background: #f4f6f9; margin: 0; }
+        
+        .sidebar { width: 250px; background: #2c3e50; height: 100vh; position: fixed; color: white; padding-top: 20px; z-index: 1000; }
+        .sidebar h2 { text-align: center; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 15px; }
+        .menu-btn { display: block; padding: 15px; color: #b8c7ce; text-decoration: none; cursor: pointer; transition: 0.3s; }
+        .menu-btn:hover { background: #3c8dbc; color: white; border-right: 4px solid white; }
+        
+        .content { margin-right: 250px; padding: 20px; }
+        
+        .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; }
+        .num { font-size: 30px; font-weight: bold; display: block; margin-top: 10px; }
+        
+        table { width: 100%; background: white; border-collapse: collapse; margin-top: 10px; border-radius: 8px; overflow: hidden; }
+        th { background: #3c8dbc; color: white; padding: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
+        
+        .pic-row img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ddd; margin: 0 5px; object-fit: cover; }
+        .pic-label { font-size: 10px; display: block; color: #777; }
+        
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin: 5px 0; width: 48%; }
+        .form-row { display: flex; justify-content: space-between; flex-wrap: wrap; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; margin-top: 10px;}
+        .btn-green { background: #28a745; }
+        .btn-blue { background: #007bff; }
+        .btn-red { background: #dc3545; }
+        .btn-orange { background: #ffc107; color: #333; }
+
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; color: white; }
+        .in { background: #28a745; } .out { background: #6c757d; }
+        
+        /* دوربین کوچک در داشبورد */
+        .live-cam-dash {
+            width: 150px; height: 110px; border: 3px solid #007bff; border-radius: 10px; 
+            position: absolute; left: 20px; top: 20px; object-fit: cover; background: #000;
+        }
+    </style>
+    
+    <script>
+        function openTab(tabName) {
+            var x = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < x.length; i++) { x[i].style.display = "none"; }
+            document.getElementById(tabName).style.display = "block";
+            localStorage.setItem('activeTab', tabName);
+        }
+        window.onload = function() {
+            var lastTab = localStorage.getItem('activeTab') || 'dashboard';
+            openTab(lastTab);
+        };
+        
+        // تابع ویرایش کاربر (پر کردن فرم)
+        function editUser(uid, name, pcode, type, rate, nid, bdate) {
+            // باز کردن تب ثبت نام
+            openTab('users');
+            // پر کردن فیلدها
+            document.querySelector('[name="uid"]').value = uid;
+            document.querySelector('[name="name"]').value = name;
+            document.querySelector('[name="p_code"]').value = pcode;
+            document.querySelector('[name="type"]').value = type;
+            document.querySelector('[name="hourly_rate"]').value = rate;
+            document.querySelector('[name="national_id"]').value = nid;
+            document.querySelector('[name="birth_date"]').value = bdate;
+            
+            // تغییر رنگ دکمه برای اینکه معلوم شود حالت ویرایش است
+            document.querySelector('.btn-green').innerText = "💾 ذخیره تغییرات";
+            document.querySelector('.btn-green').style.background = "#ffc107";
+            document.querySelector('.btn-green').style.color = "#000";
+            
+            // اسکرول به بالا
+            window.scrollTo(0,0);
+            alert("اطلاعات " + name + " در فرم بارگذاری شد. تغییرات را اعمال و ذخیره کنید.");
+        }
+    </script>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>مدیریت هوشمند دانشگاه</h2>
+        <a class="menu-btn" onclick="openTab('dashboard')">🏠 داشبورد تردد</a>
+        <a class="menu-btn" onclick="openTab('users')">👥 مدیریت و ثبت‌نام</a>
+        <a class="menu-btn" onclick="openTab('salary')">💰 حقوق و دستمزد</a>
+        <a class="menu-btn" onclick="openTab('wallet')">💳 کیف پول</a>
+        <a class="menu-btn" onclick="openTab('settings')">⚙️ تنظیمات</a>
+        <a href="/logout" class="menu-btn" style="color:#ff6b6b">🚪 خروج</a>
+    </div>
+
+    <div class="content">
+        
+        <div id="dashboard" class="tab-content" style="position:relative;">
+            <h1>وضعیت لحظه‌ای</h1>
+            <img src="{{ url_for('video_feed') }}" class="live-cam-dash" title="تصویر زنده دوربین">
+
+            <div class="stats-row">
+                <div class="stat-card">تعداد کل <span class="num">{{ stat.total }}</span></div>
+                <div class="stat-card" style="color:green">حاضر <span class="num">{{ stat.present }}</span></div>
+                <div class="stat-card" style="color:red">غایب <span class="num">{{ stat.absent }}</span></div>
+            </div>
+
+            <button onclick="location.reload()" class="btn btn-blue">🔄 بروزرسانی دستی</button>
+            
+            <table>
+                <thead>
+                    <tr><th>تصاویر</th><th>نام</th><th>ورود</th><th>خروج</th><th>مدت</th><th>وضعیت</th></tr>
+                </thead>
+                <tbody id="log_table_body">
+                    {% for log, user in logs %}
+                    <tr>
+                        <td class="pic-row">
+                            <img src="/static/photos/{{ user.photo }}">
+                            <img src="/static/photos/{{ log.entry_pic }}">
+                        </td>
+                        <td>{{ user.name }}</td>
+                        <td style="color:green">{{ log.entry_time }}</td>
+                        <td style="color:red">{{ log.exit_time if log.exit_time else "-" }}</td>
+                        <td>{{ log.duration if log.duration else "-" }}</td>
+                        <td>
+                            {% if log.exit_time %}<span class="status-badge out">خارج</span>{% else %}<span class="status-badge in">حاضر</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="users" class="tab-content">
+            <h1>ثبت نام / ویرایش اساتید</h1>
+            <div style="background:white; padding:20px; border-radius:8px; border-top: 4px solid #ffc107;">
+                
+                <form action="/register_user" method="POST">
+                    <div class="form-row">
+                        <div style="width:100%; text-align:center; margin-bottom:10px;">
+                            <input type="text" id="uid_input" name="uid" placeholder="کد کارت (کارت بزنید...)" required readonly style="background:#fce4ec; width:50%; text-align:center;">
+                        </div>
+                        
+                        <input type="text" name="name" placeholder="نام و نام خانوادگی" required>
+                        <input type="text" name="p_code" placeholder="کد پرسنلی" required>
+                        
+                        <input list="job_types" name="type" placeholder="سمت شغلی (انتخاب یا تایپ کنید)" required>
+                        <datalist id="job_types">
+                            <option value="هیئت علمی">
+                            <option value="حق التدریس">
+                            <option value="کارمند">
+                            <option value="خدمات">
+                        </datalist>
+
+                        <input type="number" name="hourly_rate" placeholder="نرخ حقوق ساعتی (تومان)" required>
+                        
+                        <input type="text" name="national_id" placeholder="کد ملی (اختیاری)">
+                        <input type="text" name="birth_date" placeholder="تاریخ تولد (اختیاری)">
+                    </div>
+                    
+                    <button class="btn btn-green" style="width:100%">+ ثبت / ذخیره تغییرات</button>
+                </form>
+            </div>
+            
+            <h3>لیست اساتید (برای ویرایش روی دکمه نارنجی کلیک کنید)</h3>
+            <table>
+                <thead><tr><th>نام</th><th>سمت</th><th>حقوق ساعتی</th><th>کد ملی</th><th>تولد</th><th>عملیات</th></tr></thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ u.name }}</td>
+                        <td>{{ u.type }}</td>
+                        <td>{{ u.hourly_rate }}</td>
+                        <td style="color:#666; font-size:12px;">{{ u.national_id if u.national_id else "-" }}</td>
+                        <td style="color:#666; font-size:12px;">{{ u.birth_date if u.birth_date else "-" }}</td>
+                        <td>
+                            <button class="btn btn-orange" style="padding:5px 10px; font-size:12px;"
+                                onclick="editUser('{{u.uid}}', '{{u.name}}', '{{u.p_code}}', '{{u.type}}', '{{u.hourly_rate}}', '{{u.national_id}}', '{{u.birth_date}}')">
+                                ✎ ویرایش
+                            </button>
+                            <a href="/delete_user/{{ u.uid }}" class="btn btn-red" style="padding:5px 10px; font-size:12px; text-decoration:none;">حذف ✕</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="salary" class="tab-content">
+            <h1>💰 محاسبه حقوق و دستمزد</h1>
+            <p>محاسبه دقیق بر اساس مجموع ساعات حضور × نرخ ساعتی تعیین شده</p>
+            
+             <table>
+                <thead>
+                    <tr>
+                        <th>نام استاد</th>
+                        <th>سمت شغلی</th>
+                        <th>نرخ ساعتی</th>
+                        <th>کل ساعات کارکرد</th>
+                        <th style="background:#28a745">مبلغ قابل پرداخت (تومان)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in salary_data %}
+                    <tr>
+                        <td style="font-weight:bold">{{ item.name }}</td>
+                        <td>{{ item.type }}</td>
+                        <td>{{ item.rate }}</td>
+                        <td style="color:blue">{{ item.total_hours }} ساعت</td>
+                        <td style="color:green; font-weight:bold; font-size:18px;">{{ item.total_pay }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="wallet" class="tab-content">
+            <h1>💳 کیف پول</h1>
+            <div style="background:white; padding:20px; border-radius:8px;">
+                <form action="/charge_wallet" method="POST">
+                    <input type="text" name="uid" placeholder="کد کارت" required>
+                    <input type="number" name="amount" placeholder="مبلغ شارژ (تومان)" required>
+                    <button class="btn btn-blue">افزایش موجودی</button>
+                </form>
+            </div>
+            <table>
+                <thead><tr><th>نام</th><th>موجودی فعلی</th></tr></thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr><td>{{ u.name }}</td><td style="color:green; font-weight:bold">{{ u.balance }} تومان</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="settings" class="tab-content">
+            <h1>تنظیمات</h1>
+            <form action="/change_pass" method="POST">
+                <input type="password" name="new_pass" placeholder="رمز جدید مدیر">
+                <button class="btn btn-blue">تغییر رمز</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. خواندن کارت برای فرم ثبت نام
+        setInterval(() => {
+            fetch('/get_last_card').then(r => r.json()).then(d => {
+                if(d.card && d.card !== "") {
+                    const uidField = document.getElementById('uid_input');
+                    if(uidField && uidField.value !== d.card) {
+                        uidField.value = d.card;
+                        uidField.style.backgroundColor = "#d4edda"; 
+                    }
+                }
+            });
+        }, 1000);
+
+        // 2. بروزرسانی خودکار جدول داشبورد (هر 2 ثانیه) بدون رفرش صفحه
+        setInterval(() => {
+            // فقط اگر تب داشبورد باز است اجرا شود
+            if(document.getElementById('dashboard').style.display === 'block'){
+                fetch('/api/get_logs').then(r => r.json()).then(data => {
+                    let html = "";
+                    data.forEach(log => {
+                        let status = log.is_out ? '<span class="status-badge out">خارج</span>' : '<span class="status-badge in">حاضر</span>';
+                        html += `
+                        <tr>
+                            <td class="pic-row">
+                                <img src="/static/photos/${log.u_photo}">
+                                <img src="/static/photos/${log.l_entry_pic}">
+                            </td>
+                            <td>${log.name}</td>
+                            <td style="color:green">${log.entry}</td>
+                            <td style="color:red">${log.exit}</td>
+                            <td>${log.dur}</td>
+                            <td>${status}</td>
+                        </tr>`;
+                    });
+                    document.getElementById('log_table_body').innerHTML = html;
+                });
+            }
+        }, 2000); // هر 2000 میلی‌ثانیه (2 ثانیه)
+    </script>
+</body>
+</html>

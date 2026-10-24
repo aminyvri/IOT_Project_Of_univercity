@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>سامانه تردد</title>
+    <style>
+        body { background-color: #e3f2fd; color: #333; font-family: Tahoma; margin: 0; }
+        header { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #007bff; }
+        .clock { font-size: 24px; color: #007bff; font-weight: bold; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 20px; }
+        .container { display: flex; justify-content: center; gap: 30px; padding: 40px; flex-wrap: wrap; }
+        .box { background: white; border-radius: 15px; padding: 25px; width: 40%; box-shadow: 0 5px 15px rgba(0,0,0,0.1); text-align: center; }
+        .row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 12px 0; font-size: 18px; }
+        .val { font-weight: bold; }
+        .badge { padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 20px; font-size: 20px; }
+        .enter { background: #d4edda; color: green; } .exit { background: #f8d7da; color: red; } .wait { background: #fff3cd; color: #856404; }
+        img { width: 100%; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <div class="clock" id="time">00:00:00</div>
+            <div style="color:#666; font-size:14px;" id="date">--/--/--</div>
+        </div>
+        <a href="/login" class="btn">ورود مدیر 🔒</a>
+    </header>
+
+    <div class="container">
+        <div class="box">
+            <h3 style="color:#444;">📷 دوربین زنده</h3>
+            <img src="{{ url_for('video_feed') }}">
+        </div>
+
+        <div class="box">
+            <h3 style="color:#444;">👤 وضعیت تردد</h3>
+            <img id="pic" src="" style="width:120px; height:120px; border-radius:50%; border:3px solid #007bff; display:none; margin:0 auto 15px auto;">
+            
+            <div class="row"><span style="color:#888">نام:</span> <span id="name" class="val">-</span></div>
+            <div class="row"><span style="color:#888">کد پرسنلی:</span> <span id="code" class="val">-</span></div>
+            <div class="row"><span style="color:#888">ورود:</span> <span id="in" class="val" style="color:green">-</span></div>
+            <div class="row"><span style="color:#888">خروج:</span> <span id="out" class="val" style="color:red">-</span></div>
+            <div class="row"><span style="color:#888">مدت:</span> <span id="dur" class="val" style="color:blue">-</span></div>
+
+            <div id="stat" class="badge wait">منتظر کارت...</div>
+        </div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString('fa-IR');
+            document.getElementById('date').innerText = new Intl.DateTimeFormat('fa-IR').format(now);
+        }, 1000);
+
+        setInterval(() => {
+            fetch('/get_data').then(r => r.json()).then(d => {
+                if ((Date.now()/1000) - d.ts > 10) reset();
+                else {
+                    document.getElementById('name').innerText = d.name;
+                    document.getElementById('code').innerText = d.code;
+                    document.getElementById('in').innerText = d.entry;
+                    document.getElementById('out').innerText = d.exit;
+                    document.getElementById('dur').innerText = d.dur;
+                    
+                    const stat = document.getElementById('stat');
+                    stat.innerText = d.exit !== "-" ? "خروج موفق" : "ورود موفق";
+                    stat.className = "badge " + (d.exit !== "-" ? "exit" : "enter");
+
+                    if(d.pic) {
+                        document.getElementById('pic').src = "/static/photos/" + d.pic;
+                        document.getElementById('pic').style.display = "block";
+                    }
+                }
+            });
+        }, 1000);
+
+        function reset(){
+            document.getElementById('name').innerText = "-";
+            document.getElementById('code').innerText = "-";
+            document.getElementById('in').innerText = "-";
+            document.getElementById('out').innerText = "-";
+            document.getElementById('dur').innerText = "-";
+            document.getElementById('pic').style.display = "none";
+            document.getElementById('stat').innerText = "منتظر کارت...";
+            document.getElementById('stat').className = "badge wait";
+        }
+    </script>
+</body>
+</html>

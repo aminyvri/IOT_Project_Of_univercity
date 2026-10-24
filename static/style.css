@@ -1,0 +1,38 @@
+/* تنظیم فونت و راست‌چین کردن کل سیستم */
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Tahoma', 'Arial', sans-serif;
+    background-color: #f0f2f5;
+}
+
+/* استایل اختصاصی برای کارت‌های وضعیت */
+.status-card {
+    border: none;
+    border-radius: 15px;
+    transition: transform 0.3s;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+}
+
+/* استایل برای عکس‌های پروفایل در جدول */
+.user-img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+}
+
+/* استایل دکمه‌ها برای ظاهر مدرن‌تر */
+.btn-primary {
+    background-color: #007bff;
+    border: none;
+    border-radius: 10px;
+}
+
+/* رنگ‌بندی وضعیت ورود و خروج */
+.badge-entry { background-color: #28a745; }
+.badge-exit { background-color: #dc3545; }

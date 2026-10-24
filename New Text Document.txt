@@ -1,0 +1,139 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <ArduinoJson.h>
+
+// --- تعریف پین‌ها و تنظیمات ---
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+MFRC522 rfid(5, 4); // پین‌های SDA و RST
+
+// --- اطلاعات وای‌فای ---
+const char* ssid = "saeed";
+const char* pass = "26429403";
+
+// *** آی‌پی لپ‌تاپ (حتما چک کن عوض نشده باشد) ***
+String laptop_ip = "192.168.1.2"; 
+String server = "http://" + laptop_ip + ":5001/rfid_scan";
+
+void setup() {
+  Serial.begin(115200);
+  SPI.begin(); 
+  rfid.PCD_Init(); // راه اندازی کارت خوان
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // راه اندازی نمایشگر
+  display.setTextColor(WHITE);
+  
+  // اتصال به وای‌فای
+  show_msg("System", "Connecting...", ssid);
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500); Serial.print(".");
+  }
+  
+  // نمایش موفقیت اتصال
+  show_msg("WiFi OK", "Connected!", WiFi.localIP().toString());
+  delay(2000);
+}
+
+void loop() {
+  // 1. چک کردن وضعیت اینترنت
+  if(WiFi.status() != WL_CONNECTED){
+     WiFi.begin(ssid, pass); delay(1000); return;
+  }
+
+  // 2. آماده‌باش برای کارت زدن
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+     // نمایشگر در حالت انتظار
+     display.clearDisplay();
+     display.setTextSize(2); display.setCursor(20,10); display.println("Waiting");
+     display.setTextSize(1); display.setCursor(10,40); display.println("Place Card Here...");
+     display.display();
+     return;
+  }
+
+  // 3. خواندن کد کارت (UID)
+  String uid = "";
+  for (byte i=0; i<rfid.uid.size; i++) {
+    uid += String(rfid.uid.uidByte[i] < 0x10 ? "0" : "");
+    uid += String(rfid.uid.uidByte[i], HEX);
+  }
+  uid.toUpperCase();
+
+  // نمایش پیام "در حال ارسال..."
+  show_msg("Please Wait", "Sending...", ">>>>>");
+
+  // 4. ارسال به پایتون
+  HTTPClient http;
+  http.begin(server);
+  http.addHeader("Content-Type", "application/json");
+  int code = http.POST("{\"uid\":\"" + uid + "\"}");
+
+  // 5. دریافت و تحلیل پاسخ
+  if(code == 200){
+    String body = http.getString();
+    StaticJsonDocument<300> doc; // حافظه برای باز کردن JSON
+    deserializeJson(doc, body);
+    
+    // گرفتن اطلاعات از پایتون
+    String status = doc["status"]; // وضعیت: ورود یا خروج؟
+    String name = doc["name"];     // نام استاد
+    String msg_fa = doc["msg_fa"]; // متن پیام (خوش آمدید/خداحافظ)
+    String dur = doc["dur"];       // مدت زمان کارکرد
+    
+    // --- سناریوی ۱: کارت ناشناس ---
+    if(status == "Unknown"){
+      show_msg("Error", "Unknown Card", "Contact Admin");
+      delay(3000);
+    }
+    // --- سناریوی ۲: ورود موفق ---
+    else if(status == "Enter"){
+      // فقط اسم و پیام ورود
+      show_msg("Welcome", name, "Vorood Taeid Shod"); // ورود تایید شد
+      delay(3000);
+    }
+    // --- سناریوی ۳: خروج موفق ---
+    else if(status == "Exit"){
+      // مرحله ۱: نمایش اسم
+      show_msg("Goodbye", name, "Processing...");
+      delay(2000);
+      
+      // مرحله ۲: تایید خروج
+      show_msg("Status:", "Khorooj", "Taeid Shod"); // خروج تایید شد
+      delay(2000);
+      
+      // مرحله ۳: نمایش ساعت کارکرد دقیق
+      show_msg("Work Time:", dur, "Good Job!"); // نمایش ساعت
+      delay(3000);
+    }
+    // --- سناریوی ۴: خطای تکراری یا ناشناخته ---
+    else {
+      show_msg("Info", msg_fa, "Check Panel");
+      delay(2000);
+    }
+
+  } else {
+    // اگر سرور قطع بود
+    show_msg("Error 500", "Server Off", "Check Python"); 
+    delay(3000);
+  }
+  http.end();
+  
+  // توقف کارت خوان برای جلوگیری از خواندن تکراری سریع
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+  delay(1000);
+}
+
+// تابع کمکی برای نمایش تمیز روی صفحه
+void show_msg(String title, String main_text, String sub_text) {
+  display.clearDisplay();
+  // خط اول (عنوان کوچک)
+  display.setTextSize(1); display.setCursor(0,0); display.println(title);
+  // خط وسط (متن اصلی بزرگ)
+  display.setTextSize(2); display.setCursor(0,20); display.println(main_text);
+  // خط آخر (توضیحات کوچک)
+  display.setTextSize(1); display.setCursor(0,50); display.println(sub_text);
+  display.display();
+}

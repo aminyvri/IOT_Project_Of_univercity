@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ثبت نام استاد</title>
+    <style>
+        /* پس‌زمینه آبی ملایم */
+        body { background: #e3f2fd; font-family: 'Tahoma', sans-serif; text-align: center; padding: 20px; }
+        
+        .form-box { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            display: inline-block; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            width: 350px; 
+            border-top: 5px solid #28a745;
+        }
+        
+        /* استایل دایره‌ای برای دوربین */
+        #cam_preview {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 50%; /* دایره‌ای شدن */
+            border: 4px solid #28a745;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            outline: none;
+            text-align: center;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            font-weight: bold;
+        }
+        button:hover { background: #218838; }
+
+        /* جدول پایین صفحه */
+        table { 
+            width: 85%; 
+            margin: 40px auto; 
+            background: white; 
+            border-collapse: collapse; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        th { background: #343a40; color: white; padding: 15px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; color: #333; }
+        
+        a { text-decoration: none; color: #666; font-size: 14px; display: block; margin-top: 15px;}
+    </style>
+</head>
+<body>
+
+    <div class="form-box">
+        <h2 style="color:#28a745; margin-top:0;">+ ثبت استاد جدید</h2>
+        
+        <img src="{{ url_for('video_feed') }}" id="cam_preview" alt="دوربین">
+        
+        <form method="POST">
+            <input id="uid" name="uid" placeholder="کارت بزنید..." readonly style="background:#f1f1f1; font-weight:bold;">
+            
+            <input name="name" placeholder="نام و نام خانوادگی" required>
+            
+            <input name="pcode" placeholder="کد پرسنلی" required>
+            
+            <select name="ftype">
+                <option value="هیئت علمی">هیئت علمی</option>
+                <option value="حق التدریس">حق التدریس</option>
+                <option value="کارمند">کارمند</option>
+            </select>
+            
+            <button>ثبت و گرفتن عکس 📸</button>
+        </form>
+        
+        <a href="/admin">← بازگشت به پنل مدیریت</a>
+    </div>
+
+    <h3 style="color:#444; margin-top:40px;">📋 لیست اساتید</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>نام</th>
+                <th>کد پرسنلی</th>
+                <th>کد کارت</th>
+                <th>نوع</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.name }}</td>
+                <td>{{ u.p_code }}</td>
+                <td>{{ u.uid }}</td>
+                <td>{{ u.type }}</td>
+                <td><a href="/delete/{{ u.id }}" style="color:red; display:inline;">حذف ✕</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        // خواندن خودکار کارت
+        setInterval(() => {
+            fetch('/get_card')
+                .then(r => r.json())
+                .then(d => {
+                    if(d.card) {
+                        const inp = document.getElementById('uid');
+                        inp.value = d.card;
+                        inp.style.background = "#d4edda";
+                        inp.style.color = "green";
+                    }
+                })
+        }, 1000);
+    </script>
+
+</body>
+</html>
